@@ -1,5 +1,6 @@
 import { useState, ReactNode, PropsWithoutRef } from "react"
 import { FormProvider, useForm, UseFormProps } from "react-hook-form"
+import { Stack, Container, Center, Text, Button } from "@chakra-ui/react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
@@ -10,6 +11,7 @@ export interface FormProps<S extends z.ZodType<any, any>>
   /** Text to display in the submit button */
   submitText?: string
   schema?: S
+  maxWidthForm?: string
   onSubmit: (values: z.infer<S>) => Promise<void | OnSubmitResult>
   initialValues?: UseFormProps<z.infer<S>>["defaultValues"]
 }
@@ -25,6 +27,7 @@ export function Form<S extends z.ZodType<any, any>>({
   children,
   submitText,
   schema,
+  maxWidthForm,
   initialValues,
   onSubmit,
   ...props
@@ -38,44 +41,48 @@ export function Form<S extends z.ZodType<any, any>>({
 
   return (
     <FormProvider {...ctx}>
-      <form
-        onSubmit={ctx.handleSubmit(async (values) => {
-          const result = (await onSubmit(values)) || {}
-          for (const [key, value] of Object.entries(result)) {
-            if (key === FORM_ERROR) {
-              setFormError(value)
-            } else {
-              ctx.setError(key as any, {
-                type: "submit",
-                message: value,
-              })
+      <Container maxW={maxWidthForm ?? "400px"}>
+        <form
+          onSubmit={ctx.handleSubmit(async (values) => {
+            const result = (await onSubmit(values)) || {}
+            for (const [key, value] of Object.entries(result)) {
+              if (key === FORM_ERROR) {
+                setFormError(value)
+              } else {
+                ctx.setError(key as any, {
+                  type: "submit",
+                  message: value,
+                })
+              }
             }
-          }
-        })}
-        className="form"
-        {...props}
-      >
-        {/* Form fields supplied as children are rendered here */}
-        {children}
+          })}
+          {...props}
+        >
+          <Stack spacing={4}>{children}</Stack>
 
-        {formError && (
-          <div role="alert" style={{ color: "red" }}>
-            {formError}
-          </div>
-        )}
+          {formError && (
+            <Text fontSize="sm" color={"red"}>
+              {formError}
+            </Text>
+          )}
 
-        {submitText && (
-          <button type="submit" disabled={ctx.formState.isSubmitting}>
-            {submitText}
-          </button>
-        )}
-
-        <style global jsx>{`
-          .form > * + * {
-            margin-top: 1rem;
-          }
-        `}</style>
-      </form>
+          {submitText && (
+            <Center>
+              <Button
+                colorScheme={"teal"}
+                w={"100%"}
+                mt={4}
+                type="submit"
+                disabled={ctx.formState.isSubmitting}
+                isLoading={ctx.formState.isLoading}
+                loadingText={"Saving..."}
+              >
+                {submitText}
+              </Button>
+            </Center>
+          )}
+        </form>
+      </Container>
     </FormProvider>
   )
 }
